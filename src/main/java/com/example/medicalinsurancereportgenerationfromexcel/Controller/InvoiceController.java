@@ -69,18 +69,30 @@ public class InvoiceController {
     }
 
 
-    @GetMapping("/invoicesWithHeaders")
-    public ResponseEntity<Map<String, Object>> getInvoicesWithHeaders() {
+    @GetMapping("/invoices")
+    public ResponseEntity<List<Invoice>> getInvoices() {
         Pair<List<Invoice>, List<InvoiceHeader>> invoicesWithHeaders = service.getInvoicesWithHeaders();
         List<Invoice> invoices = invoicesWithHeaders.getLeft();
+
+        if (invoices.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        } else {
+            return ResponseEntity.ok().body(invoices);
+        }
+    }
+
+    @GetMapping("/invoiceHeaders")
+    public ResponseEntity<List<InvoiceHeader>> getInvoiceHeaders() {
+        Pair<List<Invoice>, List<InvoiceHeader>> invoicesWithHeaders = service.getInvoicesWithHeaders();
         List<InvoiceHeader> invoiceHeaders = invoicesWithHeaders.getRight();
 
-        Map<String, Object> response = new LinkedHashMap<>(); // Using LinkedHashMap to maintain the order
-        response.put("invoiceHeaders", invoiceHeaders);
-        response.put("invoices", invoices);
-
-        return ResponseEntity.ok().body(response);
+        if (invoiceHeaders.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        } else {
+            return ResponseEntity.ok().body(invoiceHeaders);
+        }
     }
+
 
     @GetMapping("/invoices/{providerName}")
     public ResponseEntity<Map<String, Object>> getInvoicesByProviderName(@PathVariable String providerName) {
