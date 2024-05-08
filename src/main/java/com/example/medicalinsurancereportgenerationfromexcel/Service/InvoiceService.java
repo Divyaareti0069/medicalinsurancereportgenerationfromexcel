@@ -1,12 +1,14 @@
 package com.example.medicalinsurancereportgenerationfromexcel.Service;
 
 import com.example.medicalinsurancereportgenerationfromexcel.Model.Invoice;
+import com.example.medicalinsurancereportgenerationfromexcel.Model.InvoiceHeader;
+import com.example.medicalinsurancereportgenerationfromexcel.Repository.InvoiceHeaderRepository;
 import com.example.medicalinsurancereportgenerationfromexcel.Repository.InvoiceRepository;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.NumberToTextConverter;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,38 +23,52 @@ import java.util.List;
 public class InvoiceService {
 
     @Autowired
-    private InvoiceRepository repository;
+    private InvoiceRepository invoiceRepository;
 
     @Autowired
-    private MongoTemplate template;
+    private InvoiceHeaderRepository invoiceHeaderRepository;
 
-    public List<Invoice> processExcel(MultipartFile file,String providerName) {
+    public Pair<List<Invoice>, List<InvoiceHeader>> getInvoicesWithHeaders() {
+        List<Invoice> invoices = invoiceRepository.findAll();
+        List<InvoiceHeader> invoiceHeaders = invoiceHeaderRepository.findAll();
+        return Pair.of(invoices, invoiceHeaders);
+    }
+
+    public List<Invoice> processExcel(MultipartFile file, String providerName) {
+        List<Invoice> invoices = new ArrayList<>();
         try (InputStream inputStream = file.getInputStream()) {
             Workbook workbook = new XSSFWorkbook(inputStream);
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> rowIterator = sheet.iterator();
 
+            InvoiceHeader header = null;
             if (rowIterator.hasNext()) {
-                rowIterator.next();
+                Row firstRow = rowIterator.next();
+                header = new InvoiceHeader();
+                header.setInvoiceDate(getStringValue(firstRow.getCell(1))); // Assuming invoice date is in the second column
+                header.setInvoiceNumber(getStringValue(firstRow.getCell(3))); // Assuming invoice number is in the fourth column
+                header.setRecordCount((int) firstRow.getCell(5).getNumericCellValue()); // Assuming record count is in the sixth column
+                header.setProviderName(providerName);
+                header = invoiceHeaderRepository.save(header);
             }
+
             if (rowIterator.hasNext()) {
                 rowIterator.next();
             }
 
-            List<Invoice> invoices = new ArrayList<>();
 
             while (rowIterator.hasNext()) {
                 Row row = rowIterator.next();
                 Invoice invoice = new Invoice();
 
                 invoice.setPolicy(getStringValue(row.getCell(0)));
-                String plan=getStringValue(row.getCell(1));
+                String plan = getStringValue(row.getCell(1));
 
                 invoice.setCustomerDefinedSort(getStringValue(row.getCell(2)));
                 invoice.setSubscriberName(getStringValue(row.getCell(3)));
                 String id = getStringValue(row.getCell(5));
                 String coverageDates = getStringValue(row.getCell(4));
-                invoice.setId(new Invoice.InvoiceId(id, coverageDates,plan));
+                invoice.setId(new Invoice.InvoiceId(id, coverageDates, plan));
                 invoice.setStatus(getStringValue(row.getCell(6)));
                 invoice.setVolume(getStringValue(row.getCell(7)));
                 invoice.setChargeAmount(getNumericValue(row.getCell(8)));
@@ -67,13 +83,14 @@ public class InvoiceService {
                 invoices.add(invoice);
             }
 
-            List<Invoice> savedInvoices = repository.saveAll(invoices);
+            invoices = invoiceRepository.saveAll(invoices);
             workbook.close();
-            return savedInvoices;
+
         } catch (IOException e) {
             e.printStackTrace();
             return Collections.emptyList();
         }
+        return invoices;
     }
 
     private String getStringValue(Cell cell) {

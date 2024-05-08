@@ -21,13 +21,6 @@ public class ProviderService {
     @Autowired
     private InvoiceRepository invoiceRepository;
 
-
-
-
-
-
-
-
     public Providers addProvider(Providers provider) {
 
         return providersRepository.save(provider);
