@@ -8,7 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
 
-@Document
+@Document(value="invoices")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -28,6 +28,7 @@ public class Invoice {
     private String benefitGroup2;
     private String benefitGroup3;
     private String providerName;
+
 
     @Data
     @AllArgsConstructor

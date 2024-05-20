@@ -9,8 +9,11 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.NumberToTextConverter;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.mongodb.core.query.Query;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,6 +30,9 @@ public class InvoiceService {
 
     @Autowired
     private InvoiceHeaderRepository invoiceHeaderRepository;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     public Pair<List<Invoice>, List<InvoiceHeader>> getInvoicesWithHeaders() {
         List<Invoice> invoices = invoiceRepository.findAll();
@@ -45,9 +51,9 @@ public class InvoiceService {
             if (rowIterator.hasNext()) {
                 Row firstRow = rowIterator.next();
                 header = new InvoiceHeader();
-                header.setInvoiceDate(getStringValue(firstRow.getCell(1))); // Assuming invoice date is in the second column
-                header.setInvoiceNumber(getStringValue(firstRow.getCell(3))); // Assuming invoice number is in the fourth column
-                header.setRecordCount((int) firstRow.getCell(5).getNumericCellValue()); // Assuming record count is in the sixth column
+                header.setInvoiceDate(getStringValue(firstRow.getCell(1)));
+                header.setInvoiceNumber(getStringValue(firstRow.getCell(3)));
+                header.setRecordCount((int) firstRow.getCell(5).getNumericCellValue());
                 header.setProviderName(providerName);
                 header = invoiceHeaderRepository.save(header);
             }
@@ -55,7 +61,6 @@ public class InvoiceService {
             if (rowIterator.hasNext()) {
                 rowIterator.next();
             }
-
 
             while (rowIterator.hasNext()) {
                 Row row = rowIterator.next();
@@ -85,7 +90,6 @@ public class InvoiceService {
 
             invoices = invoiceRepository.saveAll(invoices);
             workbook.close();
-
         } catch (IOException e) {
             e.printStackTrace();
             return Collections.emptyList();
@@ -109,5 +113,26 @@ public class InvoiceService {
             return (float) cell.getNumericCellValue();
         }
         return 0.0f;
+    }
+
+    public List<Invoice> filterByYear(int year) {
+        String regexPattern = String.format(".*\\d{2}/\\d{2}/%04d.*", year);
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id.coverageDates").regex(regexPattern));
+        return mongoTemplate.find(query, Invoice.class);
+    }
+
+    public List<Invoice> filterByYearAndMonth(int year, int month) {
+        String regexPattern = String.format(".*%02d/\\d{2}/%04d.*", month, year);
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id.coverageDates").regex(regexPattern));
+        return mongoTemplate.find(query, Invoice.class);
+    }
+
+    public List<Invoice> filterByMonth(int month) {
+        String regexPattern = String.format(".*%02d/\\d{2}/\\d{4}.*", month);
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id.coverageDates").regex(regexPattern));
+        return mongoTemplate.find(query, Invoice.class);
     }
 }

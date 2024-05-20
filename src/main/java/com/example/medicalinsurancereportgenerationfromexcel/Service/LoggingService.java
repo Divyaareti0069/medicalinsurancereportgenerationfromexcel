@@ -19,9 +19,9 @@ public class LoggingService {
     }
 
     public ErrorData saveErrorData(ErrorData errorData) {
-        ErrorData existingErrorData = errorDataRepository.findByStatusCode(errorData.getStatusCode());
+        ErrorData existingErrorData = errorDataRepository.findBydatetime(errorData.getDatetime());
         if (existingErrorData != null) {
-            throw new IllegalArgumentException("ErrorData with status code " + errorData.getStatusCode() + " already exists");
+            throw new IllegalArgumentException("ErrorData with timestamp " + errorData.getDatetime()+ " already exists");
         }
         return errorDataRepository.save(errorData);
     }

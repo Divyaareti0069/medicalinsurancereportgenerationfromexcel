@@ -28,7 +28,7 @@ public class ProviderService {
 
     public Providers updateProvider(String providerName, Providers updatedProvider) throws ResourceNotFoundException {
 
-        Optional<Providers> existingProvider = providersRepository.findByProviderName(providerName);
+        Optional<Providers> existingProvider = providersRepository.findById(providerName);
 
         if (existingProvider.isPresent()) {
             Providers existingProviderValue = existingProvider.get();
@@ -46,7 +46,7 @@ public class ProviderService {
     }
 
     public void deleteProvider(String providerName) {
-        Providers existingProvider = providersRepository.findByProviderName(providerName)
+        Providers existingProvider = providersRepository.findById(providerName)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider not found with name: " + providerName));
         providersRepository.delete(existingProvider);
     }
@@ -56,7 +56,7 @@ public class ProviderService {
     }
 
     public Optional<Providers> getProviderByName(String providerName) {
-        return providersRepository.findByProviderName(providerName);
+        return providersRepository.findById(providerName);
     }
 }
 

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@RequestMapping("/logs")
 public class LoggingController {
 
     private final ErrorDataRepository errorDataRepository;
@@ -29,10 +30,12 @@ public class LoggingController {
             return ResponseEntity.status(HttpStatus.CREATED).body(savedErrorData);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }catch(Exception e){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
 
-    @GetMapping("/logs")
+    @GetMapping("/getlogs")
     public ResponseEntity<List<ErrorData>> getAllLogs() {
         List<ErrorData> getErrorData = errorDataRepository.findAll();
         return ResponseEntity.ok(getErrorData);

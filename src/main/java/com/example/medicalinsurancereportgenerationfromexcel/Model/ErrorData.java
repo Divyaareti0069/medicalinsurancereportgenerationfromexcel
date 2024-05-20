@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class ErrorData {
 
-
     private String id;
     private int statusCode;
     private String errorMessage;

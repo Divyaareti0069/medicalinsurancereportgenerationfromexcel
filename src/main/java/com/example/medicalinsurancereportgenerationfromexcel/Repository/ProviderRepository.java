@@ -8,6 +8,6 @@ import java.util.Optional;
 @Repository
 
 public interface ProviderRepository extends MongoRepository<Providers,String> {
-    Optional<Providers> findByProviderName(String providerName);
+    Optional<Providers> findById(String providerName);
 }
 
