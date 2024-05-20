@@ -115,7 +115,7 @@ public class InvoiceController {
     @GetMapping("/year/{year}")
     public ResponseEntity<List<Invoice>> filterInvoicesByYear(@PathVariable int year) {
         if (!isValidYear(year)) {
-            throw new IllegalAugmentException("records for the year " + year + "not found" );
+            throw new IllegalAugmentException("records for the year " + year + " not found" );
         }
         List<Invoice> invoices = service.filterByYear(year);
         return ResponseEntity.ok(invoices);
@@ -123,16 +123,20 @@ public class InvoiceController {
 
 
     @GetMapping("/{year}/{month}")
-    public ResponseEntity<List<Invoice>> filterInvoicesByYearAndMonth(@PathVariable int year, @PathVariable int month) {
+    public ResponseEntity<?> filterInvoicesByYearAndMonth(@PathVariable int year, @PathVariable int month) {
         if (!isValidYear(year)) {
-            throw new IllegalAugmentException("records for the year " + year + "not found" );
+            throw new IllegalAugmentException("Records for the year " + year + " not found" );
         }
         if (!isValidMonth(month)) {
             throw new IllegalAugmentException("Invalid month provided: " + month);
         }
         List<Invoice> invoices = service.filterByYearAndMonth(year, month);
+        if (invoices.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No records found for the provided month: " + month);
+        }
         return ResponseEntity.ok(invoices);
     }
+
 
     @GetMapping("/month/{month}")
     public ResponseEntity<List<Invoice>> filterInvoicesByMonth(@PathVariable int month) {
