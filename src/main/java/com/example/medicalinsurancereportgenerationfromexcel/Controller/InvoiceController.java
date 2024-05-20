@@ -1,6 +1,8 @@
 package com.example.medicalinsurancereportgenerationfromexcel.Controller;
 
 import com.example.medicalinsurancereportgenerationfromexcel.Exception.EmptyInvoiceException;
+import com.example.medicalinsurancereportgenerationfromexcel.Exception.IllegalAugmentException;
+import com.example.medicalinsurancereportgenerationfromexcel.Exception.ResourceNotFoundException;
 import com.example.medicalinsurancereportgenerationfromexcel.Model.Invoice;
 import com.example.medicalinsurancereportgenerationfromexcel.Model.InvoiceHeader;
 import com.example.medicalinsurancereportgenerationfromexcel.Repository.InvoiceHeaderRepository;
@@ -99,31 +101,54 @@ public class InvoiceController {
         Query headerQuery = new Query(Criteria.where("providerName").is(providerName));
         InvoiceHeader invoiceHeader = template.findOne(headerQuery, InvoiceHeader.class);
 
-        if (invoices.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        } else {
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("invoiceHeader", invoiceHeader);
-            response.put("invoices", invoices);
-
-            return ResponseEntity.ok().body(response);
+        if (invoiceHeader == null) {
+            throw new ResourceNotFoundException("Provider with name " + providerName + " not found");
         }
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("invoiceHeader", invoiceHeader);
+        response.put("invoices", invoices);
+
+        return ResponseEntity.ok().body(response);
     }
 
     @GetMapping("/year/{year}")
-    public List<Invoice> filterInvoicesByYear(@PathVariable int year) {
-        return service.filterByYear(year);
+    public ResponseEntity<List<Invoice>> filterInvoicesByYear(@PathVariable int year) {
+        if (!isValidYear(year)) {
+            throw new IllegalAugmentException("records for the year " + year + "not found" );
+        }
+        List<Invoice> invoices = service.filterByYear(year);
+        return ResponseEntity.ok(invoices);
     }
+
 
     @GetMapping("/{year}/{month}")
     public ResponseEntity<List<Invoice>> filterInvoicesByYearAndMonth(@PathVariable int year, @PathVariable int month) {
+        if (!isValidYear(year)) {
+            throw new IllegalAugmentException("records for the year " + year + "not found" );
+        }
+        if (!isValidMonth(month)) {
+            throw new IllegalAugmentException("Invalid month provided: " + month);
+        }
         List<Invoice> invoices = service.filterByYearAndMonth(year, month);
         return ResponseEntity.ok(invoices);
     }
 
     @GetMapping("/month/{month}")
     public ResponseEntity<List<Invoice>> filterInvoicesByMonth(@PathVariable int month) {
+        if(!isValidMonth(month)){
+            throw new IllegalAugmentException("invalid month entered : "+month);
+        }
         List<Invoice> invoices = service.filterByMonth(month);
         return ResponseEntity.ok(invoices);
     }
+
+    public boolean isValidYear(int year){
+        return year>=2000 && year<=2100;
+    }
+
+    public boolean isValidMonth(int month){
+        return month>=1 && month<=12;
+    }
+
 }
