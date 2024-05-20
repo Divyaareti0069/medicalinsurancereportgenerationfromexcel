@@ -1,9 +1,11 @@
 package com.example.medicalinsurancereportgenerationfromexcel.Service;
 
+import com.example.medicalinsurancereportgenerationfromexcel.Exception.DuplicateInvoiceHeaderException;
 import com.example.medicalinsurancereportgenerationfromexcel.Model.Invoice;
 import com.example.medicalinsurancereportgenerationfromexcel.Model.InvoiceHeader;
 import com.example.medicalinsurancereportgenerationfromexcel.Repository.InvoiceHeaderRepository;
 import com.example.medicalinsurancereportgenerationfromexcel.Repository.InvoiceRepository;
+import com.mongodb.DuplicateKeyException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.NumberToTextConverter;
@@ -17,6 +19,7 @@ import org.springframework.data.mongodb.core.query.Query;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -47,16 +50,25 @@ public class InvoiceService {
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> rowIterator = sheet.iterator();
 
-            InvoiceHeader header = null;
             if (rowIterator.hasNext()) {
                 Row firstRow = rowIterator.next();
-                header = new InvoiceHeader();
-                header.setInvoiceDate(getStringValue(firstRow.getCell(1)));
-                header.setInvoiceNumber(getStringValue(firstRow.getCell(3)));
+                InvoiceHeader header = new InvoiceHeader();
+                InvoiceHeader.InvoiceHeaderId headerId = new InvoiceHeader.InvoiceHeaderId();
+                headerId.setInvoiceDate(getStringValue(firstRow.getCell(1)));
+                headerId.setInvoiceNumber(getStringValue(firstRow.getCell(3)));
+                headerId.setProviderName(providerName);
+
+                header.setId(headerId);
                 header.setRecordCount((int) firstRow.getCell(5).getNumericCellValue());
-                header.setProviderName(providerName);
-                header = invoiceHeaderRepository.save(header);
+                header.setUploaded_timeStamp(LocalDateTime.now());
+
+                try {
+                    header = invoiceHeaderRepository.save(header);
+                } catch (DuplicateKeyException e) {
+                    throw new DuplicateInvoiceHeaderException("Duplicate Invoice Header: " + e.getMessage());
+                }
             }
+
 
             if (rowIterator.hasNext()) {
                 rowIterator.next();
