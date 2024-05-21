@@ -28,7 +28,8 @@ public class Invoice {
     private String benefitGroup2;
     private String benefitGroup3;
     private String providerName;
-
+    private int year;
+    private int month;
 
     @Data
     @AllArgsConstructor

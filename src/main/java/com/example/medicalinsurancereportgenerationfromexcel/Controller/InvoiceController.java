@@ -101,7 +101,7 @@ public class InvoiceController {
         Query headerQuery = new Query(Criteria.where("providerName").is(providerName));
         InvoiceHeader invoiceHeader = template.findOne(headerQuery, InvoiceHeader.class);
 
-        if (invoiceHeader == null) {
+        if (invoices.isEmpty()) {
             throw new ResourceNotFoundException("Provider with name " + providerName + " not found");
         }
 
@@ -112,20 +112,23 @@ public class InvoiceController {
         return ResponseEntity.ok().body(response);
     }
 
+
     @GetMapping("/year/{year}")
-    public ResponseEntity<List<Invoice>> filterInvoicesByYear(@PathVariable int year) {
+    public ResponseEntity<?> filterInvoicesByYear(@PathVariable int year) {
         if (!isValidYear(year)) {
-            throw new IllegalAugmentException("records for the year " + year + " not found" );
+            throw new IllegalAugmentException("Invalid year provided: " + year);
         }
         List<Invoice> invoices = service.filterByYear(year);
+        if (invoices.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No records found for the year: " + year);
+        }
         return ResponseEntity.ok(invoices);
     }
-
 
     @GetMapping("/{year}/{month}")
     public ResponseEntity<?> filterInvoicesByYearAndMonth(@PathVariable int year, @PathVariable int month) {
         if (!isValidYear(year)) {
-            throw new IllegalAugmentException("Records for the year " + year + " not found" );
+            throw new IllegalAugmentException("Records for the year " + year + " not found");
         }
         if (!isValidMonth(month)) {
             throw new IllegalAugmentException("Invalid month provided: " + month);
@@ -137,22 +140,23 @@ public class InvoiceController {
         return ResponseEntity.ok(invoices);
     }
 
-
     @GetMapping("/month/{month}")
     public ResponseEntity<List<Invoice>> filterInvoicesByMonth(@PathVariable int month) {
-        if(!isValidMonth(month)){
-            throw new IllegalAugmentException("invalid month entered : "+month);
+        if (!isValidMonth(month)) {
+            throw new IllegalAugmentException("Invalid month entered: " + month);
         }
         List<Invoice> invoices = service.filterByMonth(month);
         return ResponseEntity.ok(invoices);
     }
 
-    public boolean isValidYear(int year){
-        return year>=2000 && year<=2100;
+    private boolean isValidYear(int year) {
+        return year >= 2000 && year <= 2100;
     }
 
-    public boolean isValidMonth(int month){
-        return month>=1 && month<=12;
+    private boolean isValidMonth(int month) {
+        return month >= 1 && month <= 12;
     }
+
+
 
 }

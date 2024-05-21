@@ -19,7 +19,9 @@ import org.springframework.data.mongodb.core.query.Query;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -96,6 +98,12 @@ public class InvoiceService {
                 invoice.setBenefitGroup2(getStringValue(row.getCell(12)));
                 invoice.setBenefitGroup3(getStringValue(row.getCell(13)));
                 invoice.setProviderName(providerName);
+                String[] dates = coverageDates.split("-");
+                String startDate = dates[0]; // "01/01/2024"
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+                LocalDate date = LocalDate.parse(startDate, formatter);
+                invoice.setYear(date.getYear());
+                invoice.setMonth(date.getMonthValue());
 
                 invoices.add(invoice);
             }
@@ -126,8 +134,27 @@ public class InvoiceService {
         }
         return 0.0f;
     }
-
     public List<Invoice> filterByYear(int year) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("year").is(year));
+        return mongoTemplate.find(query, Invoice.class);
+    }
+
+
+    public List<Invoice> filterByYearAndMonth(int year, int month) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("year").is(year).and("month").is(month));
+        return mongoTemplate.find(query, Invoice.class);
+    }
+
+
+    public List<Invoice> filterByMonth(int month) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("month").is(month));
+        return mongoTemplate.find(query, Invoice.class);
+    }
+
+   /* public List<Invoice> filterByYear(int year) {
         String regexPattern = String.format(".*\\d{2}/\\d{2}/%04d.*", year);
         Query query = new Query();
         query.addCriteria(Criteria.where("_id.coverageDates").regex(regexPattern));
@@ -146,5 +173,5 @@ public class InvoiceService {
         Query query = new Query();
         query.addCriteria(Criteria.where("_id.coverageDates").regex(regexPattern));
         return mongoTemplate.find(query, Invoice.class);
-    }
+    }*/
 }
